@@ -1,7 +1,5 @@
 <?php
 
-return;
-
 class WPCFM_Taxonomy
 {
     /**
@@ -18,13 +16,24 @@ class WPCFM_Taxonomy
      * Handler for wpcfm_configuration_items
      */
     function get_configuration_items( $items ) {
+        global $wpdb;
+
         $taxonomies = get_taxonomies( $args = array(), $output = 'objects' );
 
         foreach ( $taxonomies as $slug => $tax_object ) {
+
+            // Load values for each taxonomy
+            $sql = "
+            SELECT t.term_id, t.name, t.slug, tt.term_taxonomy_id, tt.description, tt.parent
+            FROM {$wpdb->terms} t
+            INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_id = t.term_id AND tt.taxonomy = '$slug'
+            ";
+            $results = $wpdb->get_results( $sql );
+
             $items["tax_$slug"] = array(
-                'value'     => '',
+                'value'     => json_encode( $results ),
                 'label'     => $tax_object->labels->name,
-                'group'     => 'Taxonomies',
+                'group'     => 'Taxonomy Terms',
                 'callback'  => array( $this, 'pull_callback' ),
             );
         }
