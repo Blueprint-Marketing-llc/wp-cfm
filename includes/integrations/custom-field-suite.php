@@ -8,7 +8,6 @@ if ( ! is_plugin_active( 'custom-field-suite/cfs.php' ) ) {
 
 // Registration hook
 add_filter( 'wpcfm_configuration_items', 'cfs_configuration_items' );
-add_filter( 'wpcfm_pull_callback', 'cfs_pull_callback', 10, 2 );
 
 
 /**
@@ -33,18 +32,6 @@ function cfs_configuration_items( $items ) {
     unset( $items['cfs_version'] );
 
     return $items;
-}
-
-
-/**
- * When Pulling configuration, make sure that all items
- * beginning with "cfs_field_group" are using the right callback
- */
-function cfs_pull_callback( $callback, $callback_params ) {
-    if ( false !== strpos( $callback_params['name'], 'cfs_field_group' ) ) {
-        $callback = 'cfs_import_field_group';
-    }
-    return $callback;
 }
 
 
