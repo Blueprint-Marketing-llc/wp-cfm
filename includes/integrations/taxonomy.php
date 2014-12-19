@@ -8,7 +8,7 @@ class WPCFM_Taxonomy
      */
     function __construct() {
         add_filter( 'wpcfm_configuration_items', array( $this, 'get_configuration_items' ) );
-        add_filter( 'wpcfm_pull_callback', array( $this, 'pull_callback' ), 10, 2 );
+        //add_filter( 'wpcfm_pull_callback', array( $this, 'pull_callback' ), 10, 2 );
     }
 
 
@@ -22,13 +22,22 @@ class WPCFM_Taxonomy
 
         foreach ( $taxonomies as $slug => $tax_object ) {
 
+            $term_lookup = get_terms( $slug, array( 'hide_empty' => false, 'fields' => 'id=>slug' ) );
+
             // Load values for each taxonomy
             $sql = "
-            SELECT t.term_id, t.name, t.slug, tt.term_taxonomy_id, tt.description, tt.parent
-            FROM {$wpdb->terms} t
-            INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_id = t.term_id AND tt.taxonomy = '$slug'
-            ";
-            $results = $wpdb->get_results( $sql );
+            SELECT t.name, t.slug, tt.description, tt.parent FROM {$wpdb->terms} t
+            INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_id = t.term_id AND tt.taxonomy = '$slug'";
+            $results = $wpdb->get_results( $sql, ARRAY_A );
+
+
+            // Replace "parent" with the term slug (instead of ID)
+            foreach ( $results as $key => $result ) {
+                if ( 0 < (int) $result['parent'] ) {
+                    $results[ $key ]['parent'] = $term_lookup[ $result['parent'] ];
+                }
+            }
+
 
             $items["tax_$slug"] = array(
                 'value'     => json_encode( $results ),
@@ -43,10 +52,15 @@ class WPCFM_Taxonomy
 
 
     /**
-     * Handler for wpcfm_pull_callback
+     * Import (overwrite) taxonomy terms into DB
+     * @param string $params['name']
+     * @param string $params['group']
+     * @param string $params['old_value'] The previous settings data
+     * @param string $params['new_value'] The new settings data
      */
-    function pull_callback( $callback, $callback_params ) {
-
+    function pull_callback( $params ) {
+        $old_value = json_decode( $params['old_value'], true );
+        $new_value = json_decode( $params['new_value'], true );
     }
 }
 
